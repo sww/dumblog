@@ -2,17 +2,22 @@ package dumblog
 
 import (
 	"fmt"
+	"os"
 	"sync"
 	"time"
 )
 
 type DumbLog struct {
-	mu sync.Mutex
 	Debug bool
+	file  *os.File
+	mu    sync.Mutex
 }
 
 func New(debug bool) *DumbLog {
-	return &DumbLog{Debug: debug}
+	return &DumbLog{
+		Debug: debug,
+		file:  os.Stdout,
+	}
 }
 
 func now() string {
@@ -22,6 +27,10 @@ func now() string {
 	microseconds := now.Nanosecond() / 1e3
 
 	return fmt.Sprintf("%d/%02d/%02d %02d:%02d:%02d.%04d", year, int(month), day, hour, min, sec, microseconds)
+}
+
+func (s *DumbLog) SetOutput(f *os.File) {
+	s.file = f
 }
 
 func (s *DumbLog) Print(v ...interface{}) {
@@ -34,7 +43,7 @@ func (s *DumbLog) Print(v ...interface{}) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	fmt.Println(now, fmt.Sprint(v...))
+	fmt.Fprintln(s.file, now, fmt.Sprint(v...))
 }
 
 func (s *DumbLog) Printf(format string, v ...interface{}) {
@@ -47,5 +56,5 @@ func (s *DumbLog) Printf(format string, v ...interface{}) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	fmt.Println(now, fmt.Sprintf(format, v...))
+	fmt.Fprintln(s.file, now, fmt.Sprintf(format, v...))
 }
